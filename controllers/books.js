@@ -1,4 +1,5 @@
 const bookService = require("../services/bookService");
+const userService = require("../services/userService");
 
 const { getPostData } = require("../utils/fileHelper");
 
@@ -95,10 +96,72 @@ async function deleteBook(req, res, id) {
   }
 }
 
+async function loanBook(req, res) {
+  try {
+    const body = await getPostData(req);
+    const { userId, bookId } = JSON.parse(body);
+
+    const book = await bookService.findById(bookId);
+    const user = await userService.findById(userId);
+
+    if (!user) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "User Not Found" }));
+    }
+
+    if (!book) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Book Not Found" }));
+    }
+
+    if (book.loaned_to) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Book is already loaned out" }));
+    }
+
+    book.loaned_to = userId;
+    await bookService.update(bookId, book);
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Book loaned out successfully" }));
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async function returnBook(req, res) {
+  try {
+    const body = await getPostData(req);
+    const { userId, bookId } = JSON.parse(body);
+
+    const book = await bookService.findById(bookId);
+
+    if (!book) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Book Not Found" }));
+    }
+
+    if (book.loaned_to !== userId) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Book not loaned out to this user" }));
+    }
+
+    book.loaned_to = null;
+    await bookService.update(bookId, book);
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Book returned successfully" }));
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 module.exports = {
   getAllBooks,
   getBook,
   createBook,
   updateBook,
   deleteBook,
+  loanBook,
+  returnBook,
 };

@@ -9,6 +9,13 @@ function findAll() {
   });
 }
 
+function findById(id) {
+  return new Promise((resolve, reject) => {
+    const user = userPath.find((p) => p.id === parseInt(id));
+    resolve(user);
+  });
+}
+
 function create(user) {
   return new Promise((resolve, reject) => {
     const newUser = { id: nextId++, ...user };
@@ -30,6 +37,7 @@ function authenticate(credentials) {
 
 module.exports = {
   findAll,
+  findById,
   create,
   authenticate,
 };
